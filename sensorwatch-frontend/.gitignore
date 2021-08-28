@@ -1,0 +1,6 @@
+node_modules 
+dist
+public 
+*.log 
+config.json
+.temp_cache

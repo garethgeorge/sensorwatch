@@ -1,0 +1,4 @@
+adafruit-circuitpython-dht
+pms5003
+requests
+python-aqi
