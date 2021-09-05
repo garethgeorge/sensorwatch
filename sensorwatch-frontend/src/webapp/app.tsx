@@ -10,29 +10,8 @@ import {
   XYChart,
   Tooltip,
 } from "@visx/xychart";
-
-const LAMBDA_URL = "https://3e2jlccb1k.execute-api.us-east-1.amazonaws.com/dev/get-sensor-data"
-
-const sensorNameMap = {
-  "aq_ds80_0.5um_per_1L_air": "aq_ds80_0.5um_per_1L_air",
-  "aq_ds80_1.0um_per_1L_air": "aq_ds80_1.0um_per_1L_air",
-  "aq_ds80_2.5um_per_1L_air": "aq_ds80_2.5um_per_1L_air",
-  "aq_ds80_0.3um_per_1L_air": "aq_ds80_0.3um_per_1L_air",
-  "hydro_temp_01193a651085": "temperature probe 1",
-  "hydro_temp_01193a5b6f21": "temperature probe 2",
-  "hydro_temp_01193a42d661": "temperature probe 3",  
-}
-
-interface Datapoint {
-  x: string;
-  y: number;
-}
-
-interface Dataset {
-  name: string;
-  sensorId: string;
-  datapoints: Datapoint[];
-}
+import { LAMBDA_URL } from "./constants";
+import { buildCharts } from "./data";
 
 const App = () => {
   const [data, setData] = useState<object | null>(null);
@@ -62,44 +41,11 @@ const App = () => {
     return <h1>Loading...</h1>;
   }
 
-  const ungraphedSensorIds = [];
-  const datasets: Dataset[] = [];
-  for (const sensorId of Object.keys(data["sensor_data"])) {
-    if (!sensorNameMap[sensorId]){
-      ungraphedSensorIds.push(sensorId);
-      continue;
-    }
-
-    const sensorData = data["sensor_data"][sensorId];
-    const timestamps = sensorData["data_epoch_timestamps"];
-    const values = sensorData["data_values"];
-    const datapoints: Datapoint[] = [];
-
-    if (timestamps.length != values.length) {
-      throw new Error("UH OH. THERE IS A MISMATCH :(");
-    }
-
-    for (let i = 0; i < timestamps.length; ++i) {
-      datapoints.push({
-        x: new Date(timestamps[i] * 1000).toLocaleString(),
-        y: parseFloat(values[i]),
-      });
-    }
-
-    datasets.push({
-      name: sensorNameMap[sensorId],
-      datapoints,
-      sensorId,
-    });
-  }
-
-  datasets.sort((a, b) => {
-    return a.name > b.name ? 1 : -1;
-  });
+  const {datasets, charts} = buildCharts(data);
 
   const accessors = {
-    xAccessor: (d) => d.x,
-    yAccessor: (d) => d.y,
+    xAccessor: (d) => new Date(d.timestamp * 1000).toLocaleString(),
+    yAccessor: (d) => d.value,
   };
 
   return (
@@ -107,10 +53,10 @@ const App = () => {
       <h1>
         SensorWatch <small>data monitoring platform</small>
       </h1>
-      {datasets.map((dataset) => {
+      {charts.map((chart) => {
         return (
           <div>
-            <h2>{dataset.name}</h2>
+            <h2>{chart.name}</h2>
             <XYChart
               height={300}
               xScale={{ type: "band" }}
@@ -119,8 +65,8 @@ const App = () => {
               <AnimatedAxis orientation="bottom" />
               <AnimatedGrid columns={false} numTicks={2} />
               <AnimatedLineSeries
-                dataKey={dataset.name}
-                data={dataset.datapoints}
+                dataKey={chart.name}
+                data={chart.datapoints}
                 {...accessors}
                 strokeWidth={3}
               />
@@ -148,9 +94,9 @@ const App = () => {
           </div>
         );
       })}
-      <p>Available extra sensorIds (ungraphed)</p>
+      <p>All sensorIds (ungraphed)</p>
       <ul>
-        {ungraphedSensorIds.map((sensorId) => {
+        {Object.keys(datasets).map((sensorId) => {
           return <ul>{sensorId}</ul>;
         })}
       </ul>
