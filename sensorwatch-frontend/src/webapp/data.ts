@@ -14,22 +14,18 @@ interface Dataset {
 interface Chart {
   name: string;
   datapoints: Datapoint[];
-  showByDefault: boolean;
 }
 
 type ChartGenerator = (datasets: { [sensorId: string]: Dataset }) => Chart[];
 
 const chartGenerators: ChartGenerator[] = [
-  /**
-   * generate AQI charts, these show by default
-   */
   (datasets) => {
     const sensorNameMap = {
-      "aq_ds80_PM2.5_atmos_env": {
+      "aq_ds80_2.5um_per_1L_air": {
         type: "pm2.5",
         name: "AQI based 2.5um particulate matter",
       },
-      aq_ds80_PM10_atmos_env: {
+      aq_ds80_10um_per_1L_air: {
         type: "pm10",
         name: "AQI based on 10um particulate matter",
       },
@@ -44,7 +40,6 @@ const chartGenerators: ChartGenerator[] = [
 
       charts.push({
         name: cfg.name,
-        showByDefault: true,
         datapoints: dataset.datapoints.map((datapoint) => {
           return {
             timestamp: datapoint.timestamp,
@@ -64,27 +59,23 @@ const chartGenerators: ChartGenerator[] = [
 
   (datasets) => {
     const sensorNameMap = {
-      // "aq_ds80_0.5um_per_1L_air": "aq_ds80_0.5um_per_1L_air",
-      // "aq_ds80_1.0um_per_1L_air": "aq_ds80_1.0um_per_1L_air",
-      "aq_ds80_PM2.5_atmos_env": "aq_ds80_PM2.5_atmos_env",
-      aq_ds80_PM10_atmos_env: "aq_ds80_PM10_atmos_env",
+      "aq_ds80_0.5um_per_1L_air": "aq_ds80_0.5um_per_1L_air",
+      "aq_ds80_1.0um_per_1L_air": "aq_ds80_1.0um_per_1L_air",
       "aq_ds80_2.5um_per_1L_air": "aq_ds80_2.5um_per_1L_air",
       aq_ds80_10um_per_1L_air: "aq_ds80_10um_per_1L_air",
-      // "aq_ds80_0.3um_per_1L_air": "aq_ds80_0.3um_per_1L_air",
+      "aq_ds80_0.3um_per_1L_air": "aq_ds80_0.3um_per_1L_air",
       solar_voltage: "solar voltage",
-    };
-
-    const chartsToShowByDefault = {
-      solar_voltage: true,
     };
 
     const charts: Chart[] = [];
     for (const dataset of Object.values(datasets)) {
-      const name = sensorNameMap[dataset.sensorId] || dataset.sensorId;
+      const name = sensorNameMap[dataset.sensorId];
+      if (!name) {
+        continue;
+      }
 
       charts.push({
-        showByDefault: chartsToShowByDefault[dataset.sensorId],
-        name: name + " (raw)",
+        name,
         datapoints: dataset.datapoints,
       });
     }
@@ -107,7 +98,6 @@ const chartGenerators: ChartGenerator[] = [
       }
 
       charts.push({
-        showByDefault: true,
         name,
         datapoints: dataset.datapoints.map((datapoint) => {
           return {
