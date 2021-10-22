@@ -2,6 +2,7 @@ import type { AWS } from '@serverless/typescript';
 
 import reportSensorData from '@functions/report-sensor-data';
 import getSensorData from '@functions/get-sensor-data';
+import removeOldData from '@functions/remove-old-data';
 
 const serverlessConfiguration: AWS = {
   service: 'sensorwatch-aws',
@@ -26,6 +27,7 @@ const serverlessConfiguration: AWS = {
     environment: {
       AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
       SENSOR_DATA_TABLE: "sensor-data-${self:service}-${opt:stage, self:provider.stage}",
+      DATA_RETENTION_AGE: "2419200", // 1 month in seconds
     },
     lambdaHashingVersion: '20201221',
     iamRoleStatements: [
@@ -50,6 +52,7 @@ const serverlessConfiguration: AWS = {
   functions: {
     "report-sensor-data": reportSensorData,
     "get-sensor-data": getSensorData,
+    "remove-old-data": removeOldData,
   },
   resources: {
     Resources: {
@@ -79,7 +82,7 @@ const serverlessConfiguration: AWS = {
           ],
           BillingMode: "PAY_PER_REQUEST",
         },
-      }
+      },
     }
   }
 };
